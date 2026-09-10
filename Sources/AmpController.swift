@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import AppKit
 
 /// Owns discovery, the client, and the live device state that the menu renders.
 /// Two long-poll loops keep now-playing and volume/mute reflected near-instantly,
@@ -32,8 +33,31 @@ final class AmpController {
         lastError = nil
     }
 
+    /// Transient note about something the app did on its own. Distinct from an error:
+    /// nothing failed, but the user still needs to know why the volume moved.
+    private(set) var lastNotice: String?
+    private var noticeClearTask: Task<Void, Never>?
+
+    private func setNotice(_ message: String) {
+        lastNotice = message
+        noticeClearTask?.cancel()
+        noticeClearTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            if !Task.isCancelled { self?.lastNotice = nil }
+        }
+    }
+
+    // Power & sleep timer
+    private(set) var powerOn: Bool = true
+    private(set) var sleepTimerEndsAt: Date?
+    private var sleepTimerTask: Task<Void, Never>?
+
     // Playback
     private(set) var playbackState: String = "stopped"   // playing | paused | stopped
+    // Song currently on air (webradios), sampled from the stream's ICY metadata
+    private(set) var icyTitle: String?
+    private var icyTask: Task<Void, Never>?
+    private var icyURI: String?                          // stream the ICY task watches
     private(set) var title: String = ""
     private(set) var subtitle: String = ""
     private(set) var artworkURL: URL?
@@ -42,9 +66,27 @@ final class AmpController {
     // Mixer
     var volume: Double = 0            // 0...100 (real amp volume, shown on the slider)
     private(set) var volumeDragging = false
-    /// Hard, non-configurable safety cap: the app never SETS volume above this (of 100).
-    /// The slider still displays higher values set physically, so they can be lowered.
-    let maxVolume: Double = 50
+
+    /// Volume ceiling, enforced rather than merely drawn: `pollZone` pulls the amp
+    /// back down whenever anything else — the physical remote, the official app,
+    /// AirPlay, Bluetooth — pushes past it. Turn it off and the slider is free again.
+    var volumeCapEnabled: Bool = Defaults.volumeCapEnabled {
+        didSet {
+            Defaults.volumeCapEnabled = volumeCapEnabled
+            enforceVolumeCap()
+        }
+    }
+    var volumeCap: Double = Defaults.volumeCap {
+        didSet {
+            Defaults.volumeCap = volumeCap
+            enforceVolumeCap()
+        }
+    }
+    /// Comfort preset: applied at app launch when nothing is playing, and after an
+    /// app-initiated power-on, so the amp never starts loud (its own startup volume
+    /// can be as high as 50). Never applied while something is playing.
+    private let startupVolume: Double = 4
+    private var startupVolumeApplied = false
     private(set) var muted: Bool = false
 
     // Sources
@@ -70,32 +112,33 @@ final class AmpController {
     private(set) var bassRange: ClosedRange<Double> = -9...9
     private(set) var trebleRange: ClosedRange<Double> = -9...9
 
+    // Measured programme loudness per stream URL. Informational only: the app
+    // reports the level, it never corrects the volume from it.
+    private(set) var loudnessByURI: [String: LoudnessReading] = [:]
+
+    func loudness(for streamURI: String) -> LoudnessReading? { loudnessByURI[streamURI] }
+
+    /// Loudness of whatever is on air, when it is a stream we have measured.
+    var currentLoudness: LoudnessReading? { currentStreamURI.flatMap { loudnessByURI[$0] } }
+
     // Favorites (unlimited, app-managed)
     private(set) var allFavorites: [Favorite] = []
     var favSearch: String = ""
 
-    // Catalogue browsing (vTuner via UPnP ContentDirectory)
-    private(set) var catalog: [MediaEntry] = []
-    private(set) var catalogCrumbs: [(id: String, title: String)] = []
-    private(set) var catalogLoading = false
+    // Sub-controllers: catalogue (vTuner + index + Radio Browser) and podcasts.
+    // They own browsing/search data; every action on the amp stays here.
+    let catalog = CatalogController()
+    let podcasts = PodcastsController()
     private(set) var upnpReady = false
 
-    // Global catalogue search (grep over a local index we crawl from the amp)
-    var catalogSearch: String = ""
-    private(set) var indexedStations: [IndexedStation] = []
-    private(set) var indexRoots: [RadioIndex.Root] = []
-    private(set) var indexUpdatedAt: Date?
-    private(set) var indexBuilding = false
-    private(set) var indexProgress: (done: Int, total: Int) = (0, 0)
-
-    private let vtunerRoot = "csp/vTuner"
     private var currentStreamURI: String?
-    private var indexAutoTried = false
 
     var isPlaying: Bool { playbackState == "playing" }
+    /// Live streams refuse Pause (403) — the amp only allows play/stop on them.
+    var canPause: Bool { allowedActions.contains("pause") }
 
     /// grep-style filter: every whitespace term must appear (AND), case/diacritic-insensitive.
-    var filteredFavorites: [Favorite] { Self.grep(allFavorites, favSearch) { $0.searchKey } }
+    var filteredFavorites: [Favorite] { grepFilter(allFavorites, favSearch) { $0.searchKey } }
 
     // MARK: Quality presentation
 
@@ -143,42 +186,35 @@ final class AmpController {
     var currentThroughputKbps: Int? { statsSamples.last.map { $0.bytes_per_second * 8 / 1000 } }
     var currentRatePercent: Int? { statsSamples.last?.rate_percent }
 
-    /// Global catalogue search results (over the crawled index).
-    var catalogResults: [IndexedStation] { Self.grep(indexedStations, catalogSearch) { $0.searchKey } }
-    var indexedCount: Int { indexedStations.count }
-    var isSearchingCatalog: Bool { !catalogSearch.trimmingCharacters(in: .whitespaces).isEmpty }
-
-    private static func grep<T>(_ items: [T], _ query: String, key: (T) -> String) -> [T] {
-        let terms = query.folding(options: .diacriticInsensitive, locale: .current)
-            .lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
-        guard !terms.isEmpty else { return items }
-        return items.filter { item in let k = key(item); return terms.allSatisfy { k.contains($0) } }
-    }
-
     // MARK: - Internals
 
     private let discovery = Discovery()
     private var client: CabasseClient?
     private var loops: [Task<Void, Never>] = []
     private var volumeCommit: Task<Void, Never>?
+    private var capEnforceTask: Task<Void, Never>?
     private var bassCommit: Task<Void, Never>?
     private var trebleCommit: Task<Void, Never>?
     private var statsTask: Task<Void, Never>?
+    private var statsWantedOnReconnect = false
 
     private let favStore = FavoritesStore()
-    private let radioIndex = RadioIndex()
+    private let loudnessStore = LoudnessStore()
+    private var loudnessTask: Task<Void, Never>?
     private let systemNP = SystemNowPlaying()
     private var upnp: UPnPServices?
 
     init() {
         allFavorites = favStore.items
-        syncIndex()
+        loudnessByURI = loudnessStore.readings
+        podcasts.onError = { [weak self] in self?.setError($0) }
         // Route macOS media keys / Control Center to the amp.
         systemNP.onPlay = { [weak self] in self?.mediaSetPlaying(true) }
         systemNP.onPause = { [weak self] in self?.mediaSetPlaying(false) }
         systemNP.onToggle = { [weak self] in self?.togglePlayPause() }
         systemNP.onNext = { [weak self] in self?.next() }
         systemNP.onPrevious = { [weak self] in self?.previous() }
+        observeSystemWake()
         start()
     }
 
@@ -210,23 +246,143 @@ final class AmpController {
             }
             await refreshSources()
             await refreshSound()
+            await applyStartupVolume(client)
         }
 
         // Media browsing/playback lives on UPnP, discovered separately.
         Task { @MainActor in
             upnp = await UPnP.discover(host: amp.host)
             upnpReady = (upnp != nil)
+            catalog.upnp = upnp
             dlog("upnp ready: \(upnpReady)")
             if upnpReady {
-                await loadCatalogRoot()
+                await catalog.loadRoot()
                 // Build the searchable catalogue index in the background;
                 // cached afterwards, so later launches are instant.
-                await buildDefaultIndex()
+                await catalog.buildDefaultIndex()
             }
         }
 
         loops.append(Task { [weak self] in await self?.pollPlayer(client) })
         loops.append(Task { [weak self] in await self?.pollZone(client) })
+        loops.append(Task { [weak self] in await self?.pollPower(client) })
+
+        if statsWantedOnReconnect {
+            statsWantedOnReconnect = false
+            startStats()
+        }
+    }
+
+    // MARK: - Connection loss & Mac sleep
+
+    /// Drops the current (dead) connection and goes back to Bonjour discovery.
+    /// The amp may come back on a different IP after a reboot/DHCP renewal.
+    private func reconnect() {
+        guard client != nil else { return }
+        dlog("connection lost; dropping client and restarting discovery")
+        for t in loops { t.cancel() }
+        loops = []
+        statsWantedOnReconnect = (statsTask != nil)
+        stopStats()
+        client = nil
+        upnp = nil
+        upnpReady = false
+        catalog.upnp = nil
+        stopICY()                  // don't sample a stream we're not driving anymore
+        status = .searching
+        discovery.stop()
+        start()
+    }
+
+    private func observeSystemWake() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.verifyConnectionAfterWake() }
+        }
+    }
+
+    /// After the Mac wakes, the long-poll sockets are often silently dead and the
+    /// amp may have moved IP. Probe it once (after letting Wi-Fi come back up) and
+    /// reconnect if it doesn't answer.
+    private func verifyConnectionAfterWake() {
+        guard let client else { return }        // still searching; discovery handles it
+        dlog("mac woke; probing amp")
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))     // let the network settle
+            let ok = await Self.probe(client)
+            // Ignore a stale probe if we already reconnected elsewhere meanwhile.
+            guard let self, self.client?.base == client.base else { return }
+            if !ok {
+                dlog("probe failed after wake; reconnecting")
+                self.reconnect()
+            }
+        }
+    }
+
+    /// One bounded liveness check against the amp's REST API.
+    private static func probe(_ client: CabasseClient, timeout: Double = 5) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask { (try? await client.deviceInfo()) != nil }
+            group.addTask { try? await Task.sleep(for: .seconds(timeout)); return false }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+    }
+
+    // MARK: - Power & sleep timer
+
+    /// Once per app launch: if the amp is idle (or in standby) when we connect,
+    /// preset a low volume so the next power-on/play doesn't blast. Skipped
+    /// entirely when something is already playing.
+    private func applyStartupVolume(_ client: CabasseClient) async {
+        guard !startupVolumeApplied else { return }
+        startupVolumeApplied = true
+        guard let st = try? await client.playerState(),
+              st.metaplayer.playback.state != "playing" else { return }
+        try? await client.setVolume(Int(startupVolume))
+        volume = startupVolume
+        dlog("startup volume preset to \(Int(startupVolume))")
+    }
+
+    func togglePower() {
+        let target = !powerOn
+        powerOn = target                        // optimistic
+        if !target { cancelSleepTimer() }
+        run { [startupVolume] client in
+            try await client.setPower(target)
+            if target {
+                // Wake up quiet: override the amp's own (loud) startup volume.
+                try? await client.setVolume(Int(startupVolume))
+            }
+        }
+        if target { volume = startupVolume }
+    }
+
+    func startSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        sleepTimerEndsAt = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        sleepTimerTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Double(minutes) * 60))
+            guard let self, !Task.isCancelled else { return }
+            self.sleepTimerEndsAt = nil
+            self.powerOn = false
+            // The amp may be mid-reconnection right now: retry for a while
+            // instead of silently dropping the power-off.
+            for _ in 0..<6 {
+                if let client = self.client, (try? await client.setPower(false)) != nil { return }
+                try? await Task.sleep(for: .seconds(5))
+                if Task.isCancelled { return }
+            }
+            self.setError("Minuteur : impossible d'éteindre l'ampli (injoignable).")
+        }
+    }
+
+    func cancelSleepTimer() {
+        sleepTimerTask?.cancel()
+        sleepTimerTask = nil
+        sleepTimerEndsAt = nil
     }
 
     // MARK: - Sound (DEAP read-only + tone EQ)
@@ -307,6 +463,24 @@ final class AmpController {
         allFavorites = favStore.items
     }
 
+    /// Manual favorite by direct stream URL, for stations absent from every
+    /// directory (vTuner and Radio Browser). Returns a user-facing error
+    /// message, or nil on success.
+    func addManualFavorite(name: String, streamURI: String, website: String) -> String? {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let uri = streamURI.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !n.isEmpty else { return "Donne un nom à la radio." }
+        guard let u = URL(string: uri), u.scheme == "http" || u.scheme == "https", u.host != nil else {
+            return "URL de flux invalide (une adresse http(s) directe est attendue)."
+        }
+        guard !allFavorites.contains(where: { $0.streamURI == uri }) else {
+            return "Cette radio est déjà dans les favoris."
+        }
+        favStore.add(title: n, streamURI: uri, artURI: RadioBrowser.websiteIcon(website), genre: nil)
+        allFavorites = favStore.items
+        return nil
+    }
+
     func removeFavorite(_ fav: Favorite) {
         favStore.remove(fav)
         allFavorites = favStore.items
@@ -338,166 +512,17 @@ final class AmpController {
         }
     }
 
-    // MARK: - Catalogue (vTuner)
-
-    func loadCatalogRoot() async {
-        catalogCrumbs = [(vtunerRoot, "Radios")]
-        await loadCatalog(id: vtunerRoot)
-    }
-
-    func enterFolder(_ entry: MediaEntry) {
-        guard entry.isContainer else { return }
-        catalogCrumbs.append((entry.id, entry.title))
-        catalogSearch = ""
-        Task { await loadCatalog(id: entry.id) }
-    }
-
-    func catalogBack() {
-        guard catalogCrumbs.count > 1 else { return }
-        catalogCrumbs.removeLast()
-        catalogSearch = ""
-        if let dest = catalogCrumbs.last {
-            Task { await loadCatalog(id: dest.id) }
-        }
-    }
+    // MARK: - Catalogue playback
 
     func playEntry(_ entry: MediaEntry) {
         guard let uri = entry.streamURI else { return }
         play(uri: uri, title: entry.title, art: entry.artURI)
     }
 
-    private func loadCatalog(id: String) async {
-        guard let upnp else { return }
-        catalogLoading = true
-        catalog = []
-        defer { catalogLoading = false }
-        if let entries = try? await UPnP.browse(upnp, objectID: id) {
-            catalog = entries
-            dlog("catalog[\(id)] -> \(entries.count) entries; first: \(entries.first?.title ?? "-")")
-        }
-    }
+    // MARK: - Podcast playback
 
-    // MARK: - Global catalogue index (crawl + grep)
-
-    /// The folder currently shown; used for the "index this folder" action.
-    var currentFolder: (id: String, title: String)? { catalogCrumbs.last }
-    /// True when the current folder looks like a flat list of stations.
-    var currentFolderIsStationList: Bool {
-        !catalog.isEmpty && catalog.contains { !$0.isContainer && $0.streamURI != nil }
-    }
-    var currentFolderIndexed: Bool { currentFolder.map { radioIndex.hasRoot($0.id) } ?? false }
-
-    private func syncIndex() {
-        indexedStations = radioIndex.stations
-        indexRoots = radioIndex.roots
-        indexUpdatedAt = radioIndex.updatedAt
-    }
-
-    /// Called when the catalogue window opens: builds a default index once (the
-    /// user's country "all stations" list) so search works out of the box.
-    func ensureIndexReady() {
-        guard !indexAutoTried, radioIndex.isEmpty, upnpReady, !indexBuilding else { return }
-        indexAutoTried = true
-        Task { await buildDefaultIndex() }
-    }
-
-    /// The default searchable set: the user's country (France) plus the United Kingdom.
-    /// Each root is crawled once and cached; already-indexed roots are skipped so this
-    /// is cheap to call on every launch.
-    func buildDefaultIndex() async {
-        func hasAllStations(_ marker: String) -> Bool {
-            radioIndex.roots.contains { $0.objectID.contains(marker) && $0.objectID.contains("AllStations") }
-        }
-        let hasFrance = hasAllStations("Europe-France")
-        let hasUK = hasAllStations("United%20Kingdom")
-        if hasFrance && hasUK { return }
-
-        if !hasFrance, let fr = await defaultAllStationsRoot(), !radioIndex.hasRoot(fr.id) {
-            await buildIndex(rootID: fr.id, name: fr.name)
-        }
-        if !hasUK, let uk = await findAllStationsRoot(countryMatches: ["united kingdom", "royaume"]),
-           !radioIndex.hasRoot(uk.id) {
-            await buildIndex(rootID: uk.id, name: uk.name)
-        }
-    }
-
-    /// Adds the folder the user is currently viewing to the search index.
-    func indexCurrentFolder() {
-        guard let folder = currentFolder else { return }
-        Task { await buildIndex(rootID: folder.id, name: folder.title) }
-    }
-
-    func rebuildIndex() {
-        Task {
-            let roots = indexRoots
-            for r in roots { await buildIndex(rootID: r.objectID, name: r.name) }
-        }
-    }
-
-    func clearIndex() {
-        radioIndex.clear()
-        indexAutoTried = false
-        syncIndex()
-    }
-
-    /// Locates the user's country "all stations" flat list under vTuner.
-    private func defaultAllStationsRoot() async -> (id: String, name: String)? {
-        guard let upnp else { return nil }
-        guard let roots = try? await UPnP.browse(upnp, objectID: vtunerRoot) else { return nil }
-        let country = roots.first { $0.isContainer && $0.id.contains("LocationLevelFour") }
-            ?? roots.first { $0.isContainer }
-        guard let country else { return nil }
-        guard let kids = try? await UPnP.browse(upnp, objectID: country.id) else { return nil }
-        if let all = kids.first(where: { $0.id.contains("AllStations") }) {
-            return (all.id, "\(country.title) · toutes les stations")
-        }
-        return nil
-    }
-
-    /// Locates a country's "all stations" list by navigating Pays → continents → country.
-    /// `countryMatches` are lowercased substrings tested against the country id and title.
-    private func findAllStationsRoot(countryMatches terms: [String]) async -> (id: String, name: String)? {
-        guard let upnp else { return nil }
-        guard let continents = try? await UPnP.browse(upnp, objectID: "\(vtunerRoot)/LocationLevelTwo") else { return nil }
-        for continent in continents where continent.isContainer {
-            guard let countries = try? await UPnP.browse(upnp, objectID: continent.id) else { continue }
-            for c in countries where c.isContainer {
-                let hay = (c.id.removingPercentEncoding ?? c.id).lowercased() + " " + c.title.lowercased()
-                guard terms.contains(where: hay.contains) else { continue }
-                if let kids = try? await UPnP.browse(upnp, objectID: c.id),
-                   let all = kids.first(where: { $0.id.contains("AllStations") }) {
-                    return (all.id, "\(c.title) · toutes les stations")
-                }
-            }
-        }
-        return nil
-    }
-
-    private func buildIndex(rootID: String, name: String) async {
-        guard let upnp, !indexBuilding else { return }
-        indexBuilding = true
-        indexProgress = (0, 0)
-        defer { indexBuilding = false }
-
-        let others = radioIndex.stations(excludingRoot: rootID)
-        var seen = Set<String>()
-        var collected: [IndexedStation] = []
-
-        // Stream pages in; make each batch searchable immediately.
-        await UPnP.crawlAll(upnp, objectID: rootID) { entries, done, total in
-            for e in entries {
-                guard !e.isContainer, let uri = e.streamURI, !seen.contains(uri) else { continue }
-                seen.insert(uri)
-                collected.append(IndexedStation(title: cleanStationTitle(e.title), streamURI: uri,
-                                                artURI: e.artURI, genre: e.genre))
-            }
-            indexProgress = (done, total)
-            indexedStations = others + collected      // live, greppable during the crawl
-        }
-
-        radioIndex.setRoot(objectID: rootID, name: name, stations: collected)
-        syncIndex()
-        dlog("indexed '\(name)': \(collected.count) stations; total \(radioIndex.count)")
+    func playPodcastEpisode(_ ep: PodcastEpisode) {
+        play(uri: ep.enclosureURL, title: ep.title, art: ep.artURI ?? podcasts.show?.artURI)
     }
 
     func isFavoriteURI(_ uri: String) -> Bool { allFavorites.contains { $0.streamURI == uri } }
@@ -513,6 +538,7 @@ final class AmpController {
 
     private func pollPlayer(_ client: CabasseClient) async {
         var etag: String?
+        var failures = 0
         while !Task.isCancelled {
             do {
                 let (data, newEtag) = try await client.longPoll("/Player/State.json", etag: etag)
@@ -522,11 +548,43 @@ final class AmpController {
                     apply(state)
                     dlog("player: \(playbackState) — \(title) / \(subtitle)")
                 }
+                failures = 0
                 status = .connected
             } catch {
                 dlog("player poll error: \(error)")
                 status = .offline
+                failures += 1
+                // Persistent failures usually mean the amp rebooted or moved IP:
+                // give up on this address and let Bonjour find it again.
+                if failures >= 5 {
+                    reconnect()
+                    return
+                }
                 try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func pollPower(_ client: CabasseClient) async {
+        var etag: String?
+        while !Task.isCancelled {
+            let t0 = ContinuousClock.now
+            do {
+                let (data, newEtag) = try await client.longPoll("/System/PowerState.json", etag: etag)
+                etag = newEtag
+                if let data, let r = try? JSONDecoder().decode(PowerStateResponse.self, from: data) {
+                    // Turned off from elsewhere (remote, timer): a pending sleep
+                    // timer no longer makes sense.
+                    if powerOn && !r.power.state { cancelSleepTimer() }
+                    powerOn = r.power.state
+                }
+            } catch {
+                try? await Task.sleep(for: .seconds(2))
+            }
+            // If this endpoint ignores `Prefer: wait` and answers instantly,
+            // don't turn the loop into a hot poll.
+            if ContinuousClock.now - t0 < .seconds(1) {
+                try? await Task.sleep(for: .seconds(1))
             }
         }
     }
@@ -534,21 +592,27 @@ final class AmpController {
     private func pollZone(_ client: CabasseClient) async {
         var etag: String?
         while !Task.isCancelled {
+            let t0 = ContinuousClock.now
             do {
                 let (data, newEtag) = try await client.longPoll("/Zone/State.json", etag: etag)
                 etag = newEtag
                 if let data {
                     let zone = try JSONDecoder().decode(ZoneState.self, from: data)
-                    // Show the amp's real volume on the full 0...100 scale (it may be
-                    // above the cap if set from the physical remote). Don't stomp the
-                    // slider while the user is dragging / a commit is pending.
+                    // Show the amp's real volume on the full 0...100 scale. Don't stomp
+                    // the slider while the user is dragging / a commit is pending.
                     if volumeCommit == nil, !volumeDragging, let v = zone.volume {
                         volume = Double(v)
+                        enforceVolumeCap()
                     }
                     muted = zone.muted
                 }
             } catch {
                 try? await Task.sleep(for: .seconds(2))
+            }
+            // Same guard as the now-playing loop: if this endpoint ever stops honouring
+            // `Prefer: wait`, the loop must not degrade into a hot poll.
+            if ContinuousClock.now - t0 < .seconds(1) {
+                try? await Task.sleep(for: .seconds(1))
             }
         }
     }
@@ -572,7 +636,76 @@ final class AmpController {
             ?? ""
         artworkURL = md?.thumbnail_uri.flatMap(URL.init(string:))
 
-        systemNP.update(title: title, artist: subtitle, artworkURL: artworkURL, isPlaying: isPlaying)
+        syncICY()
+        pushNowPlaying()
+    }
+
+    /// System Now Playing: when we know the song on air, it becomes the title and
+    /// the station name moves to the artist line.
+    private func pushNowPlaying() {
+        systemNP.update(title: icyTitle ?? title,
+                        artist: icyTitle != nil ? title : subtitle,
+                        artworkURL: artworkURL,
+                        isPlaying: isPlaying)
+    }
+
+    private func stopICY() {
+        icyTask?.cancel()
+        icyTask = nil
+        icyURI = nil
+        icyTitle = nil
+    }
+
+    /// Keeps one ICY sampling loop alive for the http(s) stream being played,
+    /// and none otherwise. Streams without ICY support are given up on until
+    /// the station changes.
+    private func syncICY() {
+        let want: URL? = {
+            guard isPlaying, let uri = currentStreamURI, let url = URL(string: uri),
+                  url.scheme == "http" || url.scheme == "https" else { return nil }
+            return url
+        }()
+        guard want?.absoluteString != icyURI else { return }
+
+        icyTask?.cancel()
+        icyTask = nil
+        icyURI = want?.absoluteString
+        icyTitle = nil
+        guard let url = want else {
+            dlog("icy: stopped (no playable http stream)")
+            return
+        }
+
+        dlog("icy: watching \(url.absoluteString)")
+        measureLoudness(of: url)
+        icyTask = Task { [weak self] in
+            var misses = 0
+            while !Task.isCancelled {
+                var sample: String?
+                do {
+                    sample = try await ICYMetadata.fetchTitle(from: url)
+                } catch {
+                    dlog("icy: sample error: \(error)")
+                }
+                guard let self, !Task.isCancelled else { return }
+                if let s = sample {
+                    misses = 0
+                    let clean = s.trimmingCharacters(in: .whitespaces)
+                    let new = (clean.isEmpty || clean.caseInsensitiveCompare(self.title) == .orderedSame)
+                        ? nil : clean
+                    if new != self.icyTitle {
+                        self.icyTitle = new
+                        dlog("icy: \(new ?? "-")")
+                        self.pushNowPlaying()
+                    }
+                } else {
+                    dlog("icy: no metadata (miss \(misses + 1))")
+                    misses += 1
+                    if misses >= 2 { return }   // stream has no ICY; stop until it changes
+                }
+                try? await Task.sleep(for: .seconds(20))
+            }
+        }
     }
 
     /// Sources we never want to surface in the UI.
@@ -592,10 +725,19 @@ final class AmpController {
     // MARK: - User actions (optimistic where it helps)
 
     func togglePlayPause() {
-        run { client in
-            if self.isPlaying { try await client.pause() } else { try await client.play() }
+        if isPlaying {
+            // Live radio refuses Pause: fall back to Stop (Play resumes the stream).
+            if canPause {
+                run { try await $0.pause() }
+                playbackState = "paused"                    // optimistic
+            } else {
+                run { try await $0.stop() }
+                playbackState = "stopped"
+            }
+        } else {
+            run { try await $0.play() }
+            playbackState = "playing"
         }
-        playbackState = isPlaying ? "paused" : "playing"    // optimistic
     }
 
     func next()     { run { try await $0.next() } }
@@ -616,11 +758,10 @@ final class AmpController {
     /// Marks the slider as being actively dragged so the poll loop won't overwrite it.
     func beginVolumeDrag() { volumeDragging = true }
 
-    /// Debounced volume commit so dragging doesn't flood the amp. The written value is
-    /// hard-capped at maxVolume; releasing above the cap snaps the slider back to it.
+    /// Debounced volume commit so dragging doesn't flood the amp.
     func commitVolume() {
         volumeCommit?.cancel()
-        volume = min(volume, maxVolume)                 // enforce the cap on release
+        if volumeCapEnabled { volume = min(volume, volumeCap) }
         let target = Int(volume.rounded())
         volumeCommit = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(120))
@@ -631,6 +772,48 @@ final class AmpController {
             try? await Task.sleep(for: .milliseconds(400))   // let the amp/poll settle
             self.volumeDragging = false
             self.volumeCommit = nil
+        }
+    }
+
+    /// Pulls the amp back to the ceiling when something outside the app pushed past
+    /// it. Debounced, so holding the physical remote's up key costs one write on
+    /// release rather than one per step — and so we never fight our own commit.
+    private func enforceVolumeCap() {
+        guard volumeCapEnabled, volume > volumeCap,
+              volumeCommit == nil, !volumeDragging else { return }
+        capEnforceTask?.cancel()
+        capEnforceTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard let self, !Task.isCancelled, let client = self.client,
+                  self.volumeCapEnabled, self.volume > self.volumeCap,
+                  self.volumeCommit == nil, !self.volumeDragging else { return }
+            let ceiling = Int(self.volumeCap.rounded())
+            try? await client.setVolume(ceiling)
+            self.volume = self.volumeCap
+            self.setNotice("Plafond atteint — volume ramené à \(ceiling).")
+            self.capEnforceTask = nil
+        }
+    }
+
+    /// Samples the programme loudness of the stream on air, off the main actor.
+    /// Purely informational — nothing here touches the volume. Refines a running
+    /// mean up to five samples, then leaves the station alone for three months.
+    private func measureLoudness(of url: URL) {
+        let key = url.absoluteString
+        if let known = loudnessByURI[key], known.samples >= 5,
+           known.measuredAt > Date().addingTimeInterval(-90 * 86_400) { return }
+
+        loudnessTask?.cancel()
+        loudnessTask = Task { [weak self] in
+            // Let the amp latch onto the stream first: sampling it from the Mac at the
+            // same instant just adds contention on the station's server.
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled,
+                  let lufs = try? await Loudness.measure(stream: url),
+                  let self, !Task.isCancelled else { return }
+            let reading = self.loudnessStore.record(lufs, for: key)
+            self.loudnessByURI[key] = reading
+            dlog("loudness \(key) -> \(reading.pretty) after \(reading.samples) sample(s)")
         }
     }
 

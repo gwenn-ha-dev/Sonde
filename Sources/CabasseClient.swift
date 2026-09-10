@@ -8,11 +8,7 @@ struct CabasseClient {
 
     init(base: URL) {
         self.base = base
-        let cfg = URLSessionConfiguration.ephemeral
-        cfg.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        cfg.timeoutIntervalForRequest = 35   // long-poll waits up to ~10s server-side
-        cfg.waitsForConnectivity = false
-        self.session = URLSession(configuration: cfg)
+        self.session = Net.session(timeout: 35)   // long-poll waits up to ~10s server-side
     }
 
     enum ClientError: Error { case http(Int), badResponse }

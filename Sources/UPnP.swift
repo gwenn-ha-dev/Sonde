@@ -207,11 +207,7 @@ enum UPnP {
 
     // MARK: - SOAP / HTTP plumbing
 
-    private static let session: URLSession = {
-        let cfg = URLSessionConfiguration.ephemeral
-        cfg.timeoutIntervalForRequest = 15
-        return URLSession(configuration: cfg)
-    }()
+    private static let session = Net.session(timeout: 15)
 
     private static func soap(_ control: URL, service: String, action: String, args: String) async throws -> String {
         let envelope = """
