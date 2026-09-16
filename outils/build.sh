@@ -27,14 +27,10 @@ if [ -f logo.png ]; then
     rm -rf "$ICONSET"
 fi
 
-# Whole-module -O on the full SwiftUI surface needs more memory than a CI
-# runner has: the compiler gets killed with no diagnostic at all. CI is here
-# to prove the code still compiles, so it compiles unoptimised.
-if [ -n "${CI:-}" ]; then OPTFLAGS="-Onone"; else OPTFLAGS="-O"; fi
-echo "› Compiling… ($OPTFLAGS)"
+echo "› Compiling…"
 if ! xcrun swiftc \
     -parse-as-library \
-    $OPTFLAGS \
+    -O \
     -swift-version 5 \
     -framework SwiftUI -framework AppKit -framework Network -framework MediaPlayer \
     -o "$MACOS_DIR/$APP" \
@@ -56,7 +52,9 @@ done
 # Sign with a STABLE identity so macOS keeps the "Local Network" permission across
 # rebuilds. Ad-hoc signatures change every build, which resets that grant and makes
 # the app unable to discover the amp until re-approved. Prefer a real dev identity.
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 "Apple Development" | sed -E 's/.*"(.*)".*/\1/')
+# No signing identity is normal (CI, fresh machine): grep exits 1 and would
+# kill the script under `set -e`.
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 "Apple Development" | sed -E 's/.*"(.*)".*/\1/' || true)
 if [ -n "$IDENTITY" ]; then
     echo "› Signing with: $IDENTITY"
     codesign --force --deep --sign "$IDENTITY" "$BUNDLE" >/dev/null 2>&1 || true
