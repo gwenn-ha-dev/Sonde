@@ -58,7 +58,7 @@ enum Podcasts {
             .init(name: "country", value: Locale.current.region?.identifier ?? "FR"),
         ]
         var req = URLRequest(url: comps.url!)
-        req.setValue("CabasseRemote/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
+        req.setValue("Sonde/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
         let (data, _) = try await session.data(for: req)
         let resp = try JSONDecoder().decode(ITunesResponse.self, from: data)
 
@@ -147,7 +147,7 @@ enum Podcasts {
                 // Up to 4 antenna pages may be tried in sequence: keep each one
                 // short so a slow site can't stall the whole search.
                 req.timeoutInterval = 5
-                req.setValue("Mozilla/5.0 CabasseRemote/0.1", forHTTPHeaderField: "User-Agent")
+                req.setValue("Mozilla/5.0 Sonde/0.1", forHTTPHeaderField: "User-Agent")
                 guard let (data, resp) = try? await session.data(for: req),
                       (resp as? HTTPURLResponse)?.statusCode == 200 else { continue }
                 let html = String(decoding: data, as: UTF8.self)
@@ -180,7 +180,7 @@ enum Podcasts {
 
     private static func request(_ url: URL) -> URLRequest {
         var req = URLRequest(url: url)
-        req.setValue("CabasseRemote/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
+        req.setValue("Sonde/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
         return req
     }
 }
@@ -306,7 +306,7 @@ final class PodcastStore {
     init() {
         let base = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("CabasseRemote", isDirectory: true)
+            .appendingPathComponent("Sonde", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         url = base.appendingPathComponent("podcasts.json")
         if let data = try? Data(contentsOf: url) {
