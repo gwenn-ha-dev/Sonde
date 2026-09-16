@@ -46,7 +46,7 @@ enum RadioBrowser {
             ]
             var req = URLRequest(url: comps.url!)
             // The API asks clients to identify themselves.
-            req.setValue("CabasseRemote/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
+            req.setValue("Sonde/0.1 (macOS)", forHTTPHeaderField: "User-Agent")
 
             do {
                 let (data, resp) = try await session.data(for: req)

@@ -25,7 +25,7 @@ final class FavoritesStore {
     init() {
         let base = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("CabasseRemote", isDirectory: true)
+            .appendingPathComponent("Sonde", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         url = base.appendingPathComponent("favorites.json")
         load()

@@ -48,7 +48,7 @@ func draw(_ text: String, size: CGFloat, weight: NSFont.Weight,
 var titleX = W / 2
 if let logo = NSImage(contentsOfFile: logoPath) {
     let side: CGFloat = 30
-    let title = "Cabasse Remote"
+    let title = "Sonde"
     let titleFont = NSFont.systemFont(ofSize: 22, weight: .semibold)
     let titleW = (title as NSString).size(withAttributes: [.font: titleFont]).width
     let total = side + 12 + titleW
@@ -59,7 +59,7 @@ if let logo = NSImage(contentsOfFile: logoPath) {
     draw(title, size: 22, weight: .semibold,
          color: NSColor(calibratedWhite: 0.12, alpha: 1), centerX: titleX, y: 350)
 } else {
-    draw("Cabasse Remote", size: 22, weight: .semibold,
+    draw("Sonde", size: 22, weight: .semibold,
          color: NSColor(calibratedWhite: 0.12, alpha: 1), centerX: W / 2, y: 350)
 }
 draw("Télécommande de l'amplificateur Abyss / AMP 240 S", size: 12, weight: .regular,

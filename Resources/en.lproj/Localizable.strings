@@ -1,0 +1,38 @@
+/* Sonde — English strings.
+   Keys are the French sentences: French is the development language.
+   See ../../Charte/CHARTE.md §6. */
+
+"%lld stations indexées" = "%lld stations indexed";
+"Ajouter" = "Add";
+"Ajouter la radio en cours aux favoris" = "Add the current station to favourites";
+"Ajouter une radio par son URL de flux" = "Add a station by its stream URL";
+"Annuler" = "Cancel";
+"Annuler le minuteur" = "Cancel the timer";
+"Aucun résultat." = "No results.";
+"Catalogue" = "Catalogue";
+"Catalogue de l'ampli (vTuner)" = "Amplifier catalogue (vTuner)";
+"En attente de données…" = "Waiting for data…";
+"Favoris" = "Favourites";
+"Indexer les radios" = "Index the stations";
+"Le catalogue n'est pas encore indexé." = "The catalogue is not indexed yet.";
+"Minuteur de mise en veille" = "Sleep timer";
+"Nom" = "Name";
+"Plafond de volume" = "Volume ceiling";
+"Podcasts" = "Podcasts";
+"Podcasts suivis" = "Followed podcasts";
+"Profil DEAP" = "DEAP profile";
+"Quitter" = "Quit";
+"Radio Browser" = "Radio Browser";
+"Radios" = "Stations";
+"Recherche…" = "Searching…";
+"Réindexer tout" = "Reindex everything";
+"Réseau indisponible — réessaie." = "Network unavailable — try again.";
+"Site web (optionnel, pour le logo)" = "Website (optional, for the logo)";
+"Son" = "Sound";
+"Source" = "Source";
+"Statistiques du flux" = "Stream statistics";
+"URL du flux (http…)" = "Stream URL (http…)";
+"Veille dans %lld min" = "Standby in %lld min";
+"Vider l'index" = "Empty the index";
+"veille" = "standby";
+"À l'écoute depuis %@" = "Playing for %@";

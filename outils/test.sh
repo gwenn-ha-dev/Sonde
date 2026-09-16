@@ -3,7 +3,7 @@
 # Only the dependency-free sources are compiled in — the SwiftUI layer needs a running
 # app, and App.swift's @main would collide with the test entry point.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 OUT=$(mktemp -d); trap 'rm -rf "$OUT"' EXIT
 

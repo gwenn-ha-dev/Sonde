@@ -1,11 +1,11 @@
 #!/bin/bash
-# Packages build/CabasseRemote.app into a polished drag-to-Applications DMG.
-# Run ./build.sh first. Output: build/CabasseRemote.dmg
+# Packages build/Sonde.app into a polished drag-to-Applications DMG.
+# Run ./build.sh first. Output: build/Sonde.dmg
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
-APP="CabasseRemote"
-VOL="Cabasse Remote"
+APP="Sonde"
+VOL="Sonde"
 SRC_APP="build/$APP.app"
 OUT_DMG="build/$APP.dmg"
 

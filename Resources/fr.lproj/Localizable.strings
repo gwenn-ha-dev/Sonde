@@ -1,0 +1,39 @@
+/* Sonde — table d'identité française.
+   Les clés sont les phrases françaises. Cette table existe parce que sans
+   elle, un Mac réglé en français afficherait l'anglais : macOS choisit parmi
+   les localisations *présentes* dans le paquet. */
+
+"%lld stations indexées" = "%lld stations indexées";
+"Ajouter" = "Ajouter";
+"Ajouter la radio en cours aux favoris" = "Ajouter la radio en cours aux favoris";
+"Ajouter une radio par son URL de flux" = "Ajouter une radio par son URL de flux";
+"Annuler" = "Annuler";
+"Annuler le minuteur" = "Annuler le minuteur";
+"Aucun résultat." = "Aucun résultat.";
+"Catalogue" = "Catalogue";
+"Catalogue de l'ampli (vTuner)" = "Catalogue de l'ampli (vTuner)";
+"En attente de données…" = "En attente de données…";
+"Favoris" = "Favoris";
+"Indexer les radios" = "Indexer les radios";
+"Le catalogue n'est pas encore indexé." = "Le catalogue n'est pas encore indexé.";
+"Minuteur de mise en veille" = "Minuteur de mise en veille";
+"Nom" = "Nom";
+"Plafond de volume" = "Plafond de volume";
+"Podcasts" = "Podcasts";
+"Podcasts suivis" = "Podcasts suivis";
+"Profil DEAP" = "Profil DEAP";
+"Quitter" = "Quitter";
+"Radio Browser" = "Radio Browser";
+"Radios" = "Radios";
+"Recherche…" = "Recherche…";
+"Réindexer tout" = "Réindexer tout";
+"Réseau indisponible — réessaie." = "Réseau indisponible — réessaie.";
+"Site web (optionnel, pour le logo)" = "Site web (optionnel, pour le logo)";
+"Son" = "Son";
+"Source" = "Source";
+"Statistiques du flux" = "Statistiques du flux";
+"URL du flux (http…)" = "URL du flux (http…)";
+"Veille dans %lld min" = "Veille dans %lld min";
+"Vider l'index" = "Vider l'index";
+"veille" = "veille";
+"À l'écoute depuis %@" = "À l'écoute depuis %@";

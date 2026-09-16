@@ -148,7 +148,7 @@ enum Loudness {
     /// formats AVFoundation cannot decode (Ogg/Opus) and for playlist URLs.
     static func measure(stream url: URL, seconds: Double = 25) async throws -> Double? {
         var request = URLRequest(url: url)
-        request.setValue("CabasseRemote", forHTTPHeaderField: "User-Agent")
+        request.setValue("Sonde", forHTTPHeaderField: "User-Agent")
         let (bytes, response) = try await Net.session(timeout: 20).bytes(for: request)
         defer { bytes.task.cancel() }
 
@@ -198,7 +198,7 @@ final class LoudnessStore {
     init() {
         let base = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("CabasseRemote", isDirectory: true)
+            .appendingPathComponent("Sonde", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         url = base.appendingPathComponent("loudness.json")
         if let data = try? Data(contentsOf: url) {

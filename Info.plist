@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Cabasse Remote</string>
+    <string>Sonde</string>
     <key>CFBundleDisplayName</key>
-    <string>Cabasse Remote</string>
+    <string>Sonde</string>
     <key>CFBundleIdentifier</key>
-    <string>fr.thierry.cabasse.remote</string>
+    <string>dev.gwennha.Sonde</string>
     <key>CFBundleExecutable</key>
-    <string>CabasseRemote</string>
+    <string>Sonde</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -30,10 +30,16 @@
         <true/>
     </dict>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Cabasse Remote découvre et pilote votre amplificateur Cabasse sur le réseau local.</string>
+    <string>Sonde découvre et pilote votre amplificateur Cabasse sur le réseau local.</string>
     <key>NSBonjourServices</key>
     <array>
         <string>_cabasse-api._tcp</string>
     </array>
+	<key>CFBundleDevelopmentRegion</key><string>fr</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>fr</string>
+	</array>
 </dict>
 </plist>

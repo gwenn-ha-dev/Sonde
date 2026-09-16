@@ -97,7 +97,7 @@ suite("Loudness — conformité EBU Tech 3341")
 func sineFile(dBFS: Double, hz: Double = 1000, seconds: Double = 10, rate: Double = 48000) throws -> URL {
     let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2)!
     let url = URL(fileURLWithPath: NSTemporaryDirectory())
-        .appendingPathComponent("cabasse-test-\(UUID().uuidString).wav")
+        .appendingPathComponent("sonde-test-\(UUID().uuidString).wav")
     // Spelled out rather than reusing format.settings, which asks for non-interleaved
     // audio that no file format supports and makes AVFoundation log a warning.
     let settings: [String: Any] = [

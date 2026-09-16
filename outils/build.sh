@@ -1,11 +1,11 @@
 #!/bin/bash
-# Builds Cabasse Remote into a standalone .app bundle using swiftc.
+# Builds Sonde into a standalone .app bundle using swiftc.
 # No SPM, no Xcode project, no external dependencies — Apple frameworks only.
 set -euo pipefail
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
-APP="CabasseRemote"
+APP="Sonde"
 BUNDLE="build/$APP.app"
 MACOS_DIR="$BUNDLE/Contents/MacOS"
 RES_DIR="$BUNDLE/Contents/Resources"
@@ -37,6 +37,12 @@ xcrun swiftc \
     Sources/*.swift
 
 cp Info.plist "$BUNDLE/Contents/Info.plist"
+
+# les deux localisations, sinon macOS n'en voit qu'une (charte §6)
+for L in en fr; do
+    mkdir -p "$RES_DIR/$L.lproj"
+    cp Resources/$L.lproj/Localizable.strings "$RES_DIR/$L.lproj/" 2>/dev/null || true
+done
 
 # Sign with a STABLE identity so macOS keeps the "Local Network" permission across
 # rebuilds. Ad-hoc signatures change every build, which resets that grant and makes
