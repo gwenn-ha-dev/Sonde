@@ -1,16 +1,16 @@
 import AppKit
 
 // Renders the DMG window background (600×420 pt, @2x for retina).
-// Usage: dmg-background <logo.png> <out.png>
+// Usage: dmg-background <icon.png> <out.png>  — icon.png comes from AppIcon.icns
 // Light palette on purpose: Finder draws icon labels in black in light
 // appearance, so a dark background would make them unreadable.
 
 let args = CommandLine.arguments
 guard args.count == 3 else {
-    FileHandle.standardError.write(Data("usage: dmg-background <logo.png> <out.png>\n".utf8))
+    FileHandle.standardError.write(Data("usage: dmg-background <icon.png> <out.png>\n".utf8))
     exit(1)
 }
-let logoPath = args[1], outPath = args[2]
+let iconPath = args[1], outPath = args[2]
 
 let W: CGFloat = 600, H: CGFloat = 420, scale: CGFloat = 2
 
@@ -44,16 +44,16 @@ func draw(_ text: String, size: CGFloat, weight: NSFont.Weight,
     s.draw(at: NSPoint(x: centerX - sz.width / 2, y: y))
 }
 
-// Header: logo + app name
+// Header: icon + app name
 var titleX = W / 2
-if let logo = NSImage(contentsOfFile: logoPath) {
+if let icon = NSImage(contentsOfFile: iconPath) {
     let side: CGFloat = 30
     let title = "Sonde"
     let titleFont = NSFont.systemFont(ofSize: 22, weight: .semibold)
     let titleW = (title as NSString).size(withAttributes: [.font: titleFont]).width
     let total = side + 12 + titleW
     let x0 = (W - total) / 2
-    logo.draw(in: NSRect(x: x0, y: 346, width: side, height: side),
+    icon.draw(in: NSRect(x: x0, y: 346, width: side, height: side),
               from: .zero, operation: .sourceOver, fraction: 1)
     titleX = x0 + side + 12 + titleW / 2
     draw(title, size: 22, weight: .semibold,
