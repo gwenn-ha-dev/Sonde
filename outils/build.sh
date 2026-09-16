@@ -60,6 +60,8 @@ fi
 # every build) makes macOS treat the app as new each time and revokes its Local
 # Network permission, so it can't reach the amp. /Applications + stable signature
 # keeps the grant across rebuilds.
+# CI has nowhere to install to, and nothing to grant permissions to.
+if [ -n "${CI:-}" ]; then echo "> CI: skipping install"; exit 0; fi
 DEST="/Applications/${APP}.app"
 echo "> Installing to ${DEST}"
 rm -rf "${DEST}"
