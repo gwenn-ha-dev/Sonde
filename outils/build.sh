@@ -5,6 +5,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Minimum macOS, pinned. Without -target, swiftc stamps the binary with the
+# installed SDK's version: the same source produced macOS 27 here and 26.6 on
+# CI, and the README's claim went stale with every Xcode update.
+DEPLOY="$(uname -m)-apple-macos26.0"
+
 APP="Sonde"
 BUNDLE="build/$APP.app"
 MACOS_DIR="$BUNDLE/Contents/MacOS"
@@ -29,6 +34,7 @@ fi
 
 echo "› Compiling…"
 if ! xcrun swiftc \
+    -target "$DEPLOY" \
     -parse-as-library \
     -O \
     -swift-version 5 \
