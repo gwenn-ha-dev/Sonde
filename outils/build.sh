@@ -18,19 +18,16 @@ RES_DIR="$BUNDLE/Contents/Resources"
 rm -rf "$BUNDLE"
 mkdir -p "$MACOS_DIR" "$RES_DIR"
 
-# Build the app icon from logo.png (multi-resolution .icns) if present.
-if [ -f logo.png ]; then
-    echo "› Building app icon…"
-    ICONSET="build/AppIcon.iconset"
-    rm -rf "$ICONSET"; mkdir -p "$ICONSET"
-    for size in 16 32 128 256 512; do
-        sips -z $size $size logo.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
-        d=$((size * 2))
-        sips -z $d $d logo.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
-    done
-    iconutil -c icns "$ICONSET" -o "$RES_DIR/AppIcon.icns"
-    rm -rf "$ICONSET"
+# L'icône vient de `outils/icone.swift`, jamais d'un PNG posé à la main : c'est
+# l'invariant du projet. Auparavant ce bloc la refabriquait ici depuis logo.png,
+# écrasant dans le bundle ce que `make icon` avait produit — d'où une app qui
+# gardait l'ancienne icône quoi qu'on régénère.
+ICNS="Resources/AppIcon.icns"
+if [ ! -f "$ICNS" ] || [ outils/icone.swift -nt "$ICNS" ]; then
+    echo "› Generating app icon…"
+    make icon
 fi
+cp "$ICNS" "$RES_DIR/AppIcon.icns"
 
 echo "› Compiling…"
 if ! xcrun swiftc \
@@ -86,6 +83,13 @@ xattr -dr com.apple.quarantine "${DEST}" 2>/dev/null || true
 if [ -n "${IDENTITY}" ]; then
     codesign --force --deep --sign "${IDENTITY}" "${DEST}" >/dev/null 2>&1 || true
 fi
+
+# Réenregistrer auprès de LaunchServices. Le bundle est détruit puis recréé à
+# chaque build : sans ça le Finder garde en cache l'entrée de l'ancien et affiche
+# une icône générique, ou aucune, alors que l'icns du bundle est bon.
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+[ -x "$LSREGISTER" ] && "$LSREGISTER" -f "${DEST}" >/dev/null 2>&1 || true
+touch "${DEST}"
 
 echo "Built and installed ${DEST}"
 echo "  Launch it from /Applications (or: open \"${DEST}\")."

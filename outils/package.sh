@@ -19,7 +19,11 @@ trap 'rm -rf "$WORK"' EXIT
 echo "› Fond de fenêtre…"
 xcrun swiftc -O -o "$WORK/dmg-background" packaging/dmg-background.swift
 mkdir -p "$STAGE/.background"
-"$WORK/dmg-background" logo.png "$STAGE/.background/background.png"
+# Le logo du fond sort de l'icône générée, même source que l'icône de l'app :
+# un PNG tenu à part se serait désynchronisé, comme l'a fait logo.png.
+# On extrait la plus grande représentation, le fond étant rendu @2x.
+iconutil -c iconset "$SRC_APP/Contents/Resources/AppIcon.icns" -o "$WORK/AppIcon.iconset"
+"$WORK/dmg-background" "$WORK/AppIcon.iconset/icon_512x512@2x.png" "$STAGE/.background/background.png"
 # 144 dpi => Finder affiche le @2x net à 600×420 points.
 sips -s dpiWidth 144 -s dpiHeight 144 "$STAGE/.background/background.png" >/dev/null
 
