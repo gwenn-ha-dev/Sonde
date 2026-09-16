@@ -178,7 +178,7 @@ struct MenuView: View {
                              onDrag: amp.beginVolumeDrag, onCommit: amp.commitVolume)
                     .frame(height: 20)
 
-                Text("\(Int(amp.volume))")
+                Text(verbatim: "\(Int(amp.volume))")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(overCap ? Color.red : .secondary)
                     .frame(width: 26, alignment: .trailing)
@@ -368,7 +368,7 @@ struct SoundSection: View {
                 .toggleStyle(.checkbox)
                 Spacer()
                 Stepper(value: $amp.volumeCap, in: 5...100, step: 5) {
-                    Text("\(Int(amp.volumeCap))")
+                    Text(verbatim: "\(Int(amp.volumeCap))")
                         .font(.system(size: 11, design: .monospaced))
                         .frame(width: 24, alignment: .trailing)
                 }
