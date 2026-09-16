@@ -27,10 +27,14 @@ if [ -f logo.png ]; then
     rm -rf "$ICONSET"
 fi
 
-echo "› Compiling…"
+# Whole-module -O on the full SwiftUI surface needs more memory than a CI
+# runner has: the compiler gets killed with no diagnostic at all. CI is here
+# to prove the code still compiles, so it compiles unoptimised.
+if [ -n "${CI:-}" ]; then OPTFLAGS="-Onone"; else OPTFLAGS="-O"; fi
+echo "› Compiling… ($OPTFLAGS)"
 if ! xcrun swiftc \
     -parse-as-library \
-    -O \
+    $OPTFLAGS \
     -swift-version 5 \
     -framework SwiftUI -framework AppKit -framework Network -framework MediaPlayer \
     -o "$MACOS_DIR/$APP" \
