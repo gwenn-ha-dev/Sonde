@@ -3,3 +3,10 @@ build/
 
 # macOS
 .DS_Store
+
+.claude/
+dist/
+.build/
+DerivedData/
+*.app
+xcuserdata/
