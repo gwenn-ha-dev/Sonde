@@ -28,13 +28,18 @@ if [ -f logo.png ]; then
 fi
 
 echo "› Compiling…"
-xcrun swiftc \
+if ! xcrun swiftc \
     -parse-as-library \
     -O \
     -swift-version 5 \
     -framework SwiftUI -framework AppKit -framework Network -framework MediaPlayer \
     -o "$MACOS_DIR/$APP" \
-    Sources/*.swift
+    Sources/*.swift 2> build-errors.log; then
+    echo "--- swiftc failed, its output follows ---"
+    cat build-errors.log
+    exit 1
+fi
+cat build-errors.log
 
 cp Info.plist "$BUNDLE/Contents/Info.plist"
 
