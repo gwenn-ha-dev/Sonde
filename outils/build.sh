@@ -49,10 +49,13 @@ cat build-errors.log
 
 cp Info.plist "$BUNDLE/Contents/Info.plist"
 
-# les deux localisations, sinon macOS n'en voit qu'une (charte §6)
+# les deux localisations, sinon macOS n'en voit qu'une (charte §6). Tout le
+# dossier, pas seulement Localizable.strings : InfoPlist.strings traduit ce que
+# le système affiche lui-même — l'alerte « Réseau local », le nom sous l'icône —
+# et une copie nommément limitée l'aurait laissé au sol.
 for L in en fr; do
     mkdir -p "$RES_DIR/$L.lproj"
-    cp Resources/$L.lproj/Localizable.strings "$RES_DIR/$L.lproj/" 2>/dev/null || true
+    cp Resources/$L.lproj/*.strings "$RES_DIR/$L.lproj/" 2>/dev/null || true
 done
 
 # Sign with a STABLE identity so macOS keeps the "Local Network" permission across

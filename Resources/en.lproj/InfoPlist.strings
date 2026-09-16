@@ -1,0 +1,3 @@
+/* The system permission prompt. Keys are the values written in Info.plist —
+   English, since that is the development region (charter §6). */
+"Sonde discovers and controls your Cabasse amplifier on the local network." = "Sonde discovers and controls your Cabasse amplifier on the local network.";
