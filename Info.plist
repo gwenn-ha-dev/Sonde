@@ -30,12 +30,12 @@
         <true/>
     </dict>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Sonde découvre et pilote votre amplificateur Cabasse sur le réseau local.</string>
+    <string>Sonde discovers and controls your Cabasse amplifier on the local network.</string>
     <key>NSBonjourServices</key>
     <array>
         <string>_cabasse-api._tcp</string>
     </array>
-	<key>CFBundleDevelopmentRegion</key><string>fr</string>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
