@@ -28,7 +28,8 @@ the `Makefile`. It is the same interface in every project here.
 - **`README.md` and `README.fr.md` stay in sync.** Editing one means editing the other.
 - **The icon is generated**, never hand-placed: `outils/icone.swift` is the
   source, `make icon` rebuilds `Resources/AppIcon.icns`.
-- Code, comments and commit messages are in **English**.
+- Identifiers, commit messages and both READMEs are in **English**; comments may
+  be in English or French (charter §2).
 
 - `outils/build.sh` **installs into `/Applications` on every build**, on purpose: macOS grants the Local Network permission per signed bundle at a stable path, so building elsewhere breaks amp discovery. Do not "fix" this.
 - `CabasseClient`, `_cabasse-api._tcp` and the `Cabasse` device name are the **amplifier's protocol**, not this app's identity. They stay.

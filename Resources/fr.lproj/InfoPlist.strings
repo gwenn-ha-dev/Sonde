@@ -1,0 +1,3 @@
+/* L'alerte d'autorisation du système. Les clés sont les valeurs écrites dans
+   Info.plist : c'est la façon dont macOS localise un Info.plist. */
+"Sonde discovers and controls your Cabasse amplifier on the local network." = "Sonde découvre et pilote votre amplificateur Cabasse sur le réseau local.";
