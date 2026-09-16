@@ -41,3 +41,4 @@ Models/
 .env
 *.p12
 *.mobileprovision
+build-errors.log
