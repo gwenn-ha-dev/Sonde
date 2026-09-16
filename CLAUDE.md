@@ -48,7 +48,6 @@ README.md
 Resources/
 Sources/
 Tests/
-logo.png
 outils/
 packaging/
 ```
