@@ -4,7 +4,7 @@
 
 A small macOS **menu bar** app that drives a **Cabasse Abyss / AMP 240 S** amplifier (StreamUnlimited platform — the same electronics the official *StreamCONTROL* app talks to, but native, light and instant).
 
-Platform: macOS 14+. Build system: swiftc, no package manager. Bundle ID `dev.gwennha.Sonde`.
+Platform: macOS 26+. Build system: swiftc, no package manager. Bundle ID `dev.gwennha.Sonde`.
 
 ## Build and test
 
