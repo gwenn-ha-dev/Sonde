@@ -137,14 +137,24 @@ struct MenuView: View {
         }
     }
 
+    // One line when both fit; otherwise the loudness goes under the quality
+    // rather than truncating it ("AAC · 178 kbps · 4…").
     @ViewBuilder private var qualityBadge: some View {
-        HStack(spacing: 6) {
-            if let badge = amp.qualityBadge {
-                Text(badge).font(.system(size: 10)).foregroundStyle(.tertiary).lineLimit(1)
-            }
-            if let reading = amp.currentLoudness {
-                LoudnessBadge(reading: reading)
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { qualityText; loudnessText }
+            VStack(alignment: .leading, spacing: 2) { qualityText; loudnessText }
+        }
+    }
+
+    @ViewBuilder private var qualityText: some View {
+        if let badge = amp.qualityBadge {
+            Text(badge).font(.system(size: 10)).foregroundStyle(.tertiary).lineLimit(1).fixedSize()
+        }
+    }
+
+    @ViewBuilder private var loudnessText: some View {
+        if let reading = amp.currentLoudness {
+            LoudnessBadge(reading: reading).fixedSize()
         }
     }
 

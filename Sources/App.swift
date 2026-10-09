@@ -20,7 +20,7 @@ struct CabasseApp: App {
         Window("Statistiques du flux", id: "stats") {
             StatsView(amp: amp)
         }
-        .defaultSize(width: 360, height: 460)
+        .defaultSize(width: 360, height: 600)
 
         // Le panneau de la barre de menus, dans une fenêtre ordinaire. Il ne
         // s'ouvre que par `-window panel` : une capture d'écran ne peut pas
