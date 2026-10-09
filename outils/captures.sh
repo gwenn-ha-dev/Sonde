@@ -31,6 +31,8 @@ for lang in en fr; do
   shot "$lang" "docs/img/panel$suffix.png"    -window panel
   shot "$lang" "docs/img/catalog$suffix.png"  -window catalog -search jazz
   shot "$lang" "docs/img/podcasts$suffix.png" -window catalog -catalog.tab podcasts -search jazz
-  shot "$lang" "docs/img/stats$suffix.png"    -window stats
+  # Taller than a window the user may have resized: the saved frame wins over
+  # defaultSize, so it is overridden for this launch only.
+  shot "$lang" "docs/img/stats$suffix.png"    -window stats "-NSWindow Frame stats" "200 100 360 600 0 0 1512 948 "
 done
 pkill -x Sonde 2>/dev/null || true

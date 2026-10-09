@@ -9,7 +9,7 @@
 
 A small macOS **menu bar** app that drives a **Cabasse Abyss / AMP 240 S** amplifier (StreamUnlimited platform — the same electronics the official *StreamCONTROL* app talks to, but native, light and instant).
 
-![The Sonde panel: the amplifier "Cabasse" on and playing FIP HD from vTuner, AAC at 178 kbps measured at −15.4 LUFS; volume 6 under a ceiling of 50 marked in red; five favourite stations with their loudness; the speaker's DEAP profile, bass +1, treble +0; source DLNA](docs/img/panel.png)
+![The Sonde panel: the amplifier "Cabasse" on and playing FIP HD from vTuner, AAC at 178 kbps and 48 kHz, measured at −15.4 LUFS; volume 6 under a ceiling of 50 marked in red; five favourite stations with their loudness; the speaker's DEAP profile, bass +1, treble +0; source DLNA](docs/img/panel.png)
 
 ## Features
 
@@ -26,9 +26,9 @@ A small macOS **menu bar** app that drives a **Cabasse Abyss / AMP 240 S** ampli
 
 | Catalogue | Podcasts |
 |---|---|
-| ![The catalogue searching for “jazz”: worldwide stations from Radio Browser first, then the amplifier's own vTuner index, each with a star to add it to the favourites](docs/img/catalog.png) | ![The podcast directory searching for “jazz”: shows with their artwork and author, and a star to follow each one](docs/img/podcasts.png) |
+| ![The catalogue searching for “jazz”, 4,341 stations indexed: worldwide stations from Radio Browser, such as Radio Swiss Jazz, each with its format, bitrate and genre, and a star to add it to the favourites](docs/img/catalog.png) | ![The podcast directory searching for “jazz”: shows such as A History of Jazz Podcast, with their artwork and author, and a star to follow each one](docs/img/podcasts.png) |
 
-![Stream statistics for FIP HD: AAC, 178 kbps, 48 kHz, 16 bits, stereo; a live buffer of 8.0 s and the network throughput, each drawn as a sparkline](docs/img/stats.png)
+![Stream statistics for FIP HD: AAC, 178 kbps, 48 kHz, 16 bits, stereo; a live buffer of 8.4 s, steady, and a network throughput of 1537 kbps, each drawn as a sparkline; a fill rate of 100 %](docs/img/stats.png)
 
 The stream statistics window shows what the amp is actually receiving, and whether its buffer keeps up.
 

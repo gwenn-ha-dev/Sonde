@@ -9,7 +9,7 @@
 
 Petite app **barre de menu macOS** pour piloter un amplificateur **Cabasse Abyss / AMP 240 S** (plateforme StreamUnlimited, la même électronique que l'app officielle *StreamCONTROL*, mais native, légère et instantanée).
 
-![Le panneau de Sonde : l'ampli « Cabasse » allumé, qui joue FIP HD depuis vTuner, en AAC à 178 kbit/s, mesuré à −15,4 LUFS ; le volume à 6 sous un plafond de 50 marqué en rouge ; cinq radios favorites avec leur loudness ; le profil DEAP de l'enceinte, grave +1, aigu +0 ; la source DLNA](docs/img/panel.fr.png)
+![Le panneau de Sonde : l'ampli « Cabasse » allumé, qui joue FIP HD depuis vTuner, en AAC à 178 kbit/s et 48 kHz, mesuré à −15,4 LUFS ; le volume à 6 sous un plafond de 50 marqué en rouge ; cinq radios favorites avec leur loudness ; le profil DEAP de l'enceinte, grave +1, aigu +0 ; la source DLNA](docs/img/panel.fr.png)
 
 ## Fonctionnalités
 
@@ -26,9 +26,9 @@ Petite app **barre de menu macOS** pour piloter un amplificateur **Cabasse Abyss
 
 | Catalogue | Podcasts |
 |---|---|
-| ![Le catalogue qui cherche « jazz » : les stations du monde entier de Radio Browser d'abord, puis l'index vTuner de l'ampli, chacune avec une étoile pour l'ajouter aux favoris](docs/img/catalog.fr.png) | ![L'annuaire de podcasts qui cherche « jazz » : les émissions avec leur pochette et leur auteur, et une étoile pour suivre chacune](docs/img/podcasts.fr.png) |
+| ![Le catalogue qui cherche « jazz », 4 341 stations indexées : des stations du monde entier tirées de Radio Browser, comme Radio Swiss Jazz, chacune avec son format, son débit et son genre, et une étoile pour l'ajouter aux favoris](docs/img/catalog.fr.png) | ![L'annuaire de podcasts qui cherche « jazz » : des émissions comme Au cœur du jazz (France Musique), avec leur pochette et leur auteur, et une étoile pour suivre chacune](docs/img/podcasts.fr.png) |
 
-![Statistiques du flux de FIP HD : AAC, 178 kbit/s, 48 kHz, 16 bits, stéréo ; un tampon de 8,0 s en direct et le débit réseau, chacun tracé en courbe](docs/img/stats.fr.png)
+![Statistiques du flux de FIP HD : AAC, 178 kbit/s, 48 kHz, 16 bits, stéréo ; un tampon de 8,3 s « sous tension » et un débit réseau de 1505 kbit/s, chacun tracé en courbe ; un taux d'alimentation de 98 %](docs/img/stats.fr.png)
 
 La fenêtre des statistiques montre ce que l'ampli reçoit vraiment, et si son tampon suit.
 

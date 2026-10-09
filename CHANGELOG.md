@@ -27,6 +27,8 @@ First release with a download: a signed and notarized `.dmg`.
   same name made it ambiguous, and the build hid the refusal. The installed
   app was signed ad hoc, which is what costs the Local Network permission.
 - `Info.plist` declared macOS 14 as the minimum, while the binary needs 26.
+- The panel cut the quality badge short when the loudness sat beside it, and
+  the stream statistics window opened too short to show the fill rate.
 - The app now carries the generated icon. The build rebuilt its own from
   `logo.png` and overwrote it, so `make icon` never reached the bundle, and
   LaunchServices kept serving the cached entry of the bundle each build
