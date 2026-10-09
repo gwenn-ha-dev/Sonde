@@ -430,7 +430,8 @@ struct ToneRow: View {
 
 struct CatalogView: View {
     @Bindable var amp: AmpController
-    @State private var tab: Tab = .radios
+    // `-catalog.tab podcasts` opens on the podcasts tab (outils/captures.sh).
+    @State private var tab: Tab = UserDefaults.standard.string(forKey: "catalog.tab") == "podcasts" ? .podcasts : .radios
 
     enum Tab { case radios, podcasts }
 
@@ -448,7 +449,14 @@ struct CatalogView: View {
             if tab == .radios { radiosPane } else { PodcastsPane(amp: amp) }
         }
         .frame(minWidth: 380, minHeight: 440)
-        .onAppear { catalog.ensureIndexReady() }
+        .onAppear {
+            catalog.ensureIndexReady()
+            // `-search <text>` starts with a search in the open tab (outils/captures.sh).
+            if let q = UserDefaults.standard.string(forKey: "search"), !q.isEmpty {
+                if tab == .radios { catalog.search = q; catalog.scheduleWebSearch() }
+                else { amp.podcasts.search = q; amp.podcasts.scheduleSearch() }
+            }
+        }
         .onChange(of: catalog.search) { _, _ in catalog.scheduleWebSearch() }
     }
 

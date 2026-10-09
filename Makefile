@@ -148,9 +148,35 @@ package: build icon ## Produce a distributable bundle in build/
 ifeq ($(KIND),xcode)
 	xcodebuild -scheme $(SCHEME) -configuration Release \
 	  -archivePath $(BUILD_DIR)/$(NAME).xcarchive archive
+	@# The app comes out of the archive as build/<Name>.app, where `make sign`
+	@# expects it — the same path whatever the KIND. ditto keeps the signatures.
+	rm -rf "$(APP)"
+	ditto "$(BUILD_DIR)/$(NAME).xcarchive/Products/Applications/$(NAME).app" "$(APP)"
 else
 	./outils/package.sh
 endif
+
+# ---------------------------------------------------------------- distribute
+# CHARTE.md §12. `make sign` re-signs build/<Name>.app with the Developer ID,
+# notarizes and staples it; `make dmg` packs that notarized app; `make shots`
+# retakes the README captures; `make release-check` says whether what would be
+# published is publishable. A library has no app: the four targets say so.
+
+.PHONY: sign dmg shots release-check
+sign: package ## Developer ID signature + notarization of build/<Name>.app
+	@test -d "$(APP)" || { echo "› no $(APP) — a library has nothing to sign"; exit 1; }
+	"$(CHARTE)/outils/signer.sh" "$(APP)"
+
+dmg: ## Notarized .dmg of the signed app, in build/
+	@xcrun stapler validate -q "$(APP)" 2>/dev/null || { echo "› $(APP) is not notarized — make sign first"; exit 1; }
+	"$(CHARTE)/outils/dmg.sh" "$(APP)" "$(BUILD_DIR)"
+
+shots: ## Retake the README captures (outils/captures.sh)
+	@if [ -x outils/captures.sh ]; then "$(CHARTE)/outils/jeton-ecran.sh" ./outils/captures.sh; \
+	else echo "› no outils/captures.sh — captures are taken by hand, see CHARTE.md §12"; fi
+
+release-check: ## Is build/ publishable? spctl, captures, public identity
+	"$(CHARTE)/outils/verifier-release.sh" . "$(APP)" "$(BUILD_DIR)"
 
 # ---------------------------------------------------------------- lint
 

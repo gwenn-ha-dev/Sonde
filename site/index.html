@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonde — a menu bar remote for Cabasse amplifiers</title>
+<meta name="description" content="Free, open-source macOS menu bar remote for Cabasse Abyss and AMP 240 S amplifiers: discovery, now playing, an enforced volume ceiling, measured loudness, radio and podcasts.">
+<link rel="canonical" href="https://gwenn-ha-dev.github.io/Sonde/">
+<link rel="icon" href="images/icon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sonde — a menu bar remote for Cabasse amplifiers">
+<meta property="og:description" content="Free, open-source macOS menu bar remote for Cabasse Abyss and AMP 240 S amplifiers: discovery, now playing, an enforced volume ceiling, measured loudness, radio and podcasts.">
+<meta property="og:url" content="https://gwenn-ha-dev.github.io/Sonde/">
+<meta property="og:image" content="https://gwenn-ha-dev.github.io/Sonde/images/social-preview.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://gwenn-ha-dev.github.io/Sonde/images/social-preview.jpg">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Sonde",
+ "operatingSystem":"macOS 26 or later","applicationCategory":"MultimediaApplication",
+ "description":"Free, open-source macOS menu bar remote for Cabasse Abyss and AMP 240 S amplifiers: discovery, now playing, an enforced volume ceiling, measured loudness, radio and podcasts.",
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT",
+ "downloadUrl":"https://github.com/gwenn-ha-dev/Sonde/releases/latest",
+ "codeRepository":"https://github.com/gwenn-ha-dev/Sonde","image":"https://gwenn-ha-dev.github.io/Sonde/images/panel.png"}
+</script>
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f4f5f7; --line: #e2e4e8; --text: #16181d; --muted: #5d6170;
+    --accent: #2e8ba8; --accent-text: #fff; --link: #1f5fbf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111214; --panel: #1b1c1f; --line: #2c2d31; --text: #ececee; --muted: #a2a3a8; --link: #8ab4ff; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  a { color: var(--link); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 72px 0 40px; text-align: center; }
+  .icon { width: 96px; height: 96px; }
+  h1 { font-size: clamp(34px, 6vw, 56px); margin: 12px 0 4px; letter-spacing: -0.02em; }
+  .lead { font-size: clamp(19px, 2.6vw, 23px); max-width: 760px; margin: 0 auto 28px; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 12px 22px; border-radius: 10px; text-decoration: none;
+         font-weight: 600; border: 1px solid var(--line); color: var(--text); background: var(--panel); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .req { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  figure { margin: 0; }
+  .shot img, .hero img { max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 12px; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; text-align: center; }
+  section { padding: 48px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 28px; margin: 0 0 20px; letter-spacing: -0.01em; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+  .split.rev .text { order: 2; }
+  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } .split.rev .text { order: 0; } }
+  code { font: 14.5px ui-monospace, "SF Mono", Menlo, monospace; background: var(--panel);
+         padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); }
+  footer { padding: 36px 0 56px; color: var(--muted); font-size: 14px; text-align: center;
+           border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <img class="icon" src="images/icon.png" width="96" height="96" alt="">
+  <h1>Sonde</h1>
+  <p class="lead">Drive a Cabasse Abyss or AMP 240 S from the menu bar: it finds the amplifier by itself, shows what is playing, and keeps the volume under a ceiling that the physical remote cannot cross.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/gwenn-ha-dev/Sonde/releases/latest">Download for macOS</a>
+    <a class="btn" href="https://github.com/gwenn-ha-dev/Sonde">Source on GitHub</a>
+  </div>
+  <p class="req">Free and open source (MIT) · macOS 26 or later · signed and notarized · English and French</p>
+</header>
+
+<div class="wrap hero">
+  <figure>
+    <img src="images/panel.png" alt="The Sonde panel: the amplifier playing FIP HD, volume 6 under a ceiling of 50, five favourite stations with their measured loudness, bass, treble and source">
+    <figcaption>The whole remote in one panel, one click away in the menu bar.</figcaption>
+  </figure>
+</div>
+
+<section class="wrap" style="margin-top:48px">
+  <h2>Why Sonde</h2>
+  <div class="grid3">
+    <div class="card"><h3>Finds the amp</h3><p>Bonjour discovery and automatic reconnection: after a reboot, a new IP address or the Mac waking up, Sonde finds the amplifier again on its own.</p></div>
+    <div class="card"><h3>A ceiling that holds</h3><p>Not a mark on a slider: whatever pushes the volume past it — the physical remote, the official app, AirPlay, Bluetooth — is pulled back.</p></div>
+    <div class="card"><h3>Loudness, measured</h3><p>Each station's loudness is measured (EBU R128) and shown next to it, so a station that plays much louder is no surprise.</p></div>
+    <div class="card"><h3>Radio and podcasts</h3><p>Worldwide stations from Radio Browser, the amplifier's own vTuner catalogue, a podcast directory, and favourites without the amp's nine-slot limit.</p></div>
+    <div class="card"><h3>Sound and power</h3><p>Bass and treble, the speaker's DEAP profile, the source, standby and a sleep timer of 15 to 90 minutes.</p></div>
+    <div class="card"><h3>Native and light</h3><p>SwiftUI, Apple frameworks only, no dependency. Open source, MIT.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="split">
+    <div class="text">
+      <h2>Every station, one search</h2>
+      <p>Type a word: Sonde searches Radio Browser's worldwide directory first, then the amplifier's own vTuner
+        catalogue, indexed locally. A click plays a station, the star keeps it.</p>
+    </div>
+    <figure class="shot"><img src="images/catalog.png" alt="The catalogue searching for “jazz”: Radio Browser stations first, then the amplifier's vTuner index" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="split rev">
+    <div class="text">
+      <h2>Podcasts on the amp</h2>
+      <p>Search the podcast directory or paste an RSS address, follow a show with its star, and play an episode
+        on the amplifier like any stream.</p>
+    </div>
+    <figure class="shot"><img src="images/podcasts.png" alt="The podcast directory searching for “jazz”: shows with their artwork and author" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="split">
+    <div class="text">
+      <h2>What the amp receives</h2>
+      <p>Codec, bitrate, sample rate and bit depth of the stream, and live sparklines of the amplifier's buffer
+        and network throughput: when a station stutters, you can see why.</p>
+    </div>
+    <figure class="shot"><img src="images/stats.png" alt="Stream statistics for FIP HD: AAC, 178 kbps, 48 kHz, 16 bits, stereo, with live buffer and throughput sparklines" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="wrap" style="text-align:center">
+  <h2>Get it</h2>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/gwenn-ha-dev/Sonde/releases/latest">Download the .dmg</a>
+    <a class="btn" href="https://github.com/gwenn-ha-dev/Sonde#readme">Read the README</a>
+    <a class="btn" href="https://github.com/gwenn-ha-dev/Sonde/blob/main/README.fr.md">En français</a>
+  </div>
+  <p class="req">Open the .dmg, drag Sonde onto Applications. It is signed with a Developer ID and notarized by Apple: it opens with a double click. On first launch, allow it on the local network so it can find the amplifier.</p>
+</section>
+
+<footer class="wrap">
+  Sonde · MIT · <a href="https://github.com/gwenn-ha-dev/Sonde">github.com/gwenn-ha-dev/Sonde</a>
+</footer>
+</body>
+</html>
