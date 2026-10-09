@@ -399,16 +399,15 @@ struct LoudnessBadge: View {
     }
 
     private var help: String {
-        let base = String(format: "Loudness mesurée : %.1f LUFS (%@ par rapport à la référence broadcast −18 LUFS), sur %d échantillon(s).",
-                          reading.lufs, reading.offsetPretty, reading.samples)
+        let base = String(localized: "Loudness mesurée : \(reading.lufs, specifier: "%.1f") LUFS (\(reading.offsetPretty) par rapport à la référence broadcast −18 LUFS), sur \(reading.samples) échantillon(s).")
         return reading.isHot
-            ? base + " Cette station joue nettement plus fort : baisse le volume avant d'y passer."
+            ? base + " " + String(localized: "Cette station joue nettement plus fort : baisse le volume avant d'y passer.")
             : base
     }
 }
 
 struct ToneRow: View {
-    let label: String
+    let label: LocalizedStringKey
     @Binding var value: Double
     let range: ClosedRange<Double>
     let commit: () -> Void
@@ -756,7 +755,7 @@ struct StationRow: View {
 }
 
 struct CenteredHint: View {
-    let text: String
+    let text: LocalizedStringKey
     var body: some View {
         VStack { Spacer(); Text(text).font(.system(size: 12)).foregroundStyle(.secondary); Spacer() }
             .frame(maxWidth: .infinity)
@@ -858,7 +857,7 @@ struct StatsView: View {
 }
 
 struct StatCard<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -872,9 +871,9 @@ struct StatCard<Content: View>: View {
 }
 
 struct StatLine: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
-    init(_ label: String, _ value: String) { self.label = label; self.value = value }
+    init(_ label: LocalizedStringKey, _ value: String) { self.label = label; self.value = value }
     var body: some View {
         HStack {
             Text(label).font(.system(size: 12)).foregroundStyle(.secondary)
@@ -1013,7 +1012,7 @@ struct VolumeSlider: View {
 
 struct SearchField: View {
     @Binding var text: String
-    let prompt: String
+    let prompt: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: 6) {

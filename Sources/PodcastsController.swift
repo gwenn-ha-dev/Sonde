@@ -73,7 +73,7 @@ final class PodcastsController {
             guard let self, self.show?.feedURL == s.feedURL else { return }
             self.episodes = eps
             self.episodesLoading = false
-            if eps.isEmpty { self.onError?("Flux RSS illisible pour « \(s.title) ».") }
+            if eps.isEmpty { self.onError?(String(localized: "Flux RSS illisible pour « \(s.title) ».")) }
         }
     }
 

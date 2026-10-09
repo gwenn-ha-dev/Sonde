@@ -25,7 +25,9 @@ struct PodcastEpisode: Identifiable, Hashable {
         var parts: [String] = []
         if let d = pubDate { parts.append(d.formatted(.dateTime.day().month(.wide).year())) }
         if let s = durationSeconds, s > 0 {
-            parts.append(s >= 3600 ? "\(s / 3600) h \((s % 3600) / 60) min" : "\(max(1, s / 60)) min")
+            // FormatStyle, not "h"/"min" glued by hand: the units follow the locale.
+            parts.append(Duration.seconds(max(60, s))
+                .formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))
         }
         return parts.joined(separator: " · ")
     }

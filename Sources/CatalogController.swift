@@ -51,7 +51,7 @@ final class CatalogController {
     // MARK: - Browsing
 
     func loadRoot() async {
-        crumbs = [(vtunerRoot, "Radios")]
+        crumbs = [(vtunerRoot, String(localized: "Radios"))]
         await load(id: vtunerRoot)
     }
 
@@ -182,7 +182,7 @@ final class CatalogController {
         guard let country else { return nil }
         guard let kids = try? await UPnP.browse(upnp, objectID: country.id) else { return nil }
         if let all = kids.first(where: { $0.id.contains("AllStations") }) {
-            return (all.id, "\(country.title) · toutes les stations")
+            return (all.id, String(localized: "\(country.title) · toutes les stations"))
         }
         return nil
     }
@@ -199,7 +199,7 @@ final class CatalogController {
                 guard terms.contains(where: hay.contains) else { continue }
                 if let kids = try? await UPnP.browse(upnp, objectID: c.id),
                    let all = kids.first(where: { $0.id.contains("AllStations") }) {
-                    return (all.id, "\(c.title) · toutes les stations")
+                    return (all.id, String(localized: "\(c.title) · toutes les stations"))
                 }
             }
         }

@@ -165,8 +165,8 @@ final class AmpController {
     var channelsPretty: String? {
         switch streamChannels {
         case 1: return "Mono"
-        case 2: return "Stéréo"
-        case let n?: return "\(n) canaux"
+        case 2: return String(localized: "Stéréo")
+        case let n?: return String(localized: "\(n) canaux")
         default: return nil
         }
     }
@@ -375,7 +375,7 @@ final class AmpController {
                 try? await Task.sleep(for: .seconds(5))
                 if Task.isCancelled { return }
             }
-            self.setError("Minuteur : impossible d'éteindre l'ampli (injoignable).")
+            self.setError(String(localized: "Minuteur : impossible d'éteindre l'ampli (injoignable)."))
         }
     }
 
@@ -469,12 +469,12 @@ final class AmpController {
     func addManualFavorite(name: String, streamURI: String, website: String) -> String? {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let uri = streamURI.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !n.isEmpty else { return "Donne un nom à la radio." }
+        guard !n.isEmpty else { return String(localized: "Donne un nom à la radio.") }
         guard let u = URL(string: uri), u.scheme == "http" || u.scheme == "https", u.host != nil else {
             return "URL de flux invalide (une adresse http(s) directe est attendue)."
         }
         guard !allFavorites.contains(where: { $0.streamURI == uri }) else {
-            return "Cette radio est déjà dans les favoris."
+            return String(localized: "Cette radio est déjà dans les favoris.")
         }
         favStore.add(title: n, streamURI: uri, artURI: RadioBrowser.websiteIcon(website), genre: nil)
         allFavorites = favStore.items
@@ -492,14 +492,14 @@ final class AmpController {
 
     private func play(uri: String, title: String, art: String?) {
         guard let upnp else {
-            setError("Lecture indisponible : média non prêt.")
+            setError(String(localized: "Lecture indisponible : média non prêt."))
             return
         }
         Task {
             do {
                 try await UPnP.play(upnp, uri: uri, title: title, artURI: art)
             } catch {
-                setError("Lecture impossible : « \(title) ».")
+                setError(String(localized: "Lecture impossible : « \(title) »."))
                 return
             }
             // The amp accepts the command even for a dead stream; the failure only
@@ -507,7 +507,7 @@ final class AmpController {
             try? await Task.sleep(for: .seconds(2))
             if let info = try? await UPnP.transportInfo(upnp),
                info.status == "ERROR_OCCURRED" || info.state == "STOPPED" {
-                setError("Flux indisponible : « \(title) » ne répond pas.")
+                setError(String(localized: "Flux indisponible : « \(title) » ne répond pas."))
             }
         }
     }
@@ -790,7 +790,7 @@ final class AmpController {
             let ceiling = Int(self.volumeCap.rounded())
             try? await client.setVolume(ceiling)
             self.volume = self.volumeCap
-            self.setNotice("Plafond atteint — volume ramené à \(ceiling).")
+            self.setNotice(String(localized: "Plafond atteint — volume ramené à \(ceiling)."))
             self.capEnforceTask = nil
         }
     }
