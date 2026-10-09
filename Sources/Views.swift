@@ -66,7 +66,7 @@ struct MenuView: View {
         }
         .buttonStyle(.plain)
         .disabled(amp.status != .connected)
-        .help(amp.powerOn ? "Mettre en veille" : "Sortir de veille")
+        .help(amp.powerOn ? Text("Mettre en veille") : Text("Sortir de veille"))
     }
 
     private var sleepTimerMenu: some View {
@@ -237,8 +237,8 @@ struct FavoritesSection: View {
             SearchField(text: $amp.favSearch, prompt: "Filtrer les favoris…")
 
             if amp.filteredFavorites.isEmpty {
-                Text(amp.allFavorites.isEmpty ? "Aucun favori. Ouvre le catalogue ou ajoute la radio en cours (★)."
-                                              : "Aucun favori ne correspond.")
+                (amp.allFavorites.isEmpty ? Text("Aucun favori. Ouvre le catalogue ou ajoute la radio en cours (★).")
+                                          : Text("Aucun favori ne correspond."))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
             } else {
@@ -375,9 +375,9 @@ struct SoundSection: View {
                 .disabled(!amp.volumeCapEnabled)
             }
 
-            Text(amp.volumeCapEnabled
-                 ? "Tout dépassement est ramené à \(Int(amp.volumeCap)), y compris depuis la télécommande physique ou l'app officielle."
-                 : "Désactivé : plus aucun bridage du volume.")
+            (amp.volumeCapEnabled
+                 ? Text("Tout dépassement est ramené à \(Int(amp.volumeCap)), y compris depuis la télécommande physique ou l'app officielle.")
+                 : Text("Désactivé : plus aucun bridage du volume."))
                 .font(.system(size: 9)).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -469,9 +469,9 @@ struct CatalogView: View {
         HStack(spacing: 8) {
             if catalog.indexBuilding {
                 ProgressView().controlSize(.small)
-                Text(catalog.indexProgress.total > 0
-                     ? "Indexation… \(catalog.indexProgress.done)/\(catalog.indexProgress.total)"
-                     : "Indexation…")
+                (catalog.indexProgress.total > 0
+                     ? Text("Indexation… \(catalog.indexProgress.done)/\(catalog.indexProgress.total)")
+                     : Text("Indexation…"))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             } else {
                 Image(systemName: "magnifyingglass.circle").font(.system(size: 11)).foregroundStyle(.secondary)
@@ -481,8 +481,10 @@ struct CatalogView: View {
             Spacer()
             Menu {
                 if catalog.currentFolderIsStationList && !catalog.isSearching {
-                    Button(catalog.currentFolderIndexed ? "Réindexer ce dossier" : "Indexer ce dossier pour la recherche",
-                           action: catalog.indexCurrentFolder)
+                    Button(action: catalog.indexCurrentFolder) {
+                        catalog.currentFolderIndexed ? Text("Réindexer ce dossier")
+                                                     : Text("Indexer ce dossier pour la recherche")
+                    }
                 }
                 if !catalog.indexRoots.isEmpty {
                     Button("Réindexer tout", action: catalog.rebuildIndex)
@@ -849,7 +851,7 @@ struct StatsView: View {
         let ok = (amp.currentRatePercent ?? 100) >= 100
         return HStack(spacing: 5) {
             Circle().fill(ok ? Color.green : Color.orange).frame(width: 7, height: 7)
-            Text(ok ? "stable" : "sous tension")
+            (ok ? Text("stable") : Text("sous tension"))
                 .font(.system(size: 10)).foregroundStyle(.secondary)
         }
     }
