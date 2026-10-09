@@ -81,7 +81,6 @@ Sources/
 Tests/
 site/              GitHub Pages page
 outils/
-packaging/         old dmg background, unused since `make dmg` (charter tool)
 ```
 
 ## The charter
