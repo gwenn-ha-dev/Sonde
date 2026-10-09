@@ -60,13 +60,20 @@ done
 # the app unable to discover the amp until re-approved. Prefer a real dev identity.
 # No signing identity is normal (CI, fresh machine): grep exits 1 and would
 # kill the script under `set -e`.
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 "Apple Development" | sed -E 's/.*"(.*)".*/\1/' || true)
+#
+# L'identité est désignée par son empreinte, pas par son nom : deux certificats
+# « Apple Development » portant le même nom rendent le nom ambigu, codesign
+# refuse, et l'ancien `>/dev/null 2>&1 || true` avalait le refus — l'app restait
+# signée ad hoc par l'éditeur de liens, sans que rien ne le dise. Une signature
+# qui échoue arrête maintenant le build. Pas de `--deep` : le bundle ne contient
+# aucun code imbriqué, et la signature Developer ID (make sign) le refuse.
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk '/"Apple Development: /{print $2; exit}' || true)
 if [ -n "$IDENTITY" ]; then
-    echo "› Signing with: $IDENTITY"
-    codesign --force --deep --sign "$IDENTITY" "$BUNDLE" >/dev/null 2>&1 || true
+    echo "› Signing with the Apple Development identity"
+    codesign --force --sign "$IDENTITY" "$BUNDLE"
 else
     echo "› Ad-hoc signing (no stable identity found; Local Network may need re-approval each build)…"
-    codesign --force --deep --sign - "$BUNDLE" >/dev/null 2>&1 || true
+    codesign --force --sign - "$BUNDLE"
 fi
 
 # Install to a STABLE location. Running straight from build/ (deleted and recreated
@@ -81,7 +88,7 @@ rm -rf "${DEST}"
 cp -R "${BUNDLE}" "${DEST}"
 xattr -dr com.apple.quarantine "${DEST}" 2>/dev/null || true
 if [ -n "${IDENTITY}" ]; then
-    codesign --force --deep --sign "${IDENTITY}" "${DEST}" >/dev/null 2>&1 || true
+    codesign --force --sign "${IDENTITY}" "${DEST}"
 fi
 
 # Réenregistrer auprès de LaunchServices. Le bundle est détruit puis recréé à
